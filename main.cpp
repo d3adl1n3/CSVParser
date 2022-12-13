@@ -9,6 +9,20 @@
 
 using namespace std;
 
+
+template <size_t I = 0, typename... Ts>
+typename enable_if<I == sizeof...(Ts), void>::type
+parseString(tuple<Ts...> &tup, stringstream& line) { return; }
+
+template <size_t I = 0, typename... Ts>
+typename enable_if<(I < sizeof...(Ts)), void>::type
+parseString(tuple<Ts...> &tup, stringstream& line) {
+    string element;
+    if (!getline(line, element, ';')) {/* throw error*/}
+    get<I>(tup) = element;                                  // add element format
+    parseString<I + 1>(tup, line);
+}
+
 template <typename TupleT, size_t... Is>
 std::ostream& printTupleImp(ostream& os, const TupleT& tp, index_sequence<Is...>) {
     size_t index = 0;
@@ -53,6 +67,8 @@ public:
                 //throw error
             }
             stringstream line(s);
+            parseString(output, line);
+            /*
             string element;
             int k = 0;
             while (getline(line, element, ';')) {
@@ -62,7 +78,7 @@ public:
                     get<1>(output) = element;
                 }
                 k++;
-            }
+            }*/
             return *this;
         }
 
@@ -87,7 +103,7 @@ public:
         tuple<Types...> output;
     };
     
-  CSVParser(std::istream& input_file): file(input_file) {}
+  CSVParser(istream& input_file): file(input_file) {}
 
   line_iterator begin() const { return line_iterator(file); }
   line_iterator end() const { return line_iterator(); }
@@ -99,10 +115,9 @@ public:
 
 int main(int argc, const char * argv[]) {
     std::ifstream file("/Users/iliakateshov/Desktop/test_csv/test_csv/test_table.csv");
-    CSVParser<int, string> parser(file);
-    for (tuple<int, string> rs : parser) {
+    CSVParser<string, string> parser(file);
+    for (tuple<string, string> rs : parser) {
         cout << rs << endl;
     }
     return 0;
 }
-

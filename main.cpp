@@ -10,15 +10,36 @@
 
 using namespace std;
 
+/*data formatting*/
 template <typename T>
 T format(string element) {
+    //throw invalid_argument( "type unsupported" );
     return NULL;
-    // throw error -- type unsupported
 }
 
 template <>
 int format(string element) {
     return stoi(element);
+}
+
+template <>
+float format(string element) {
+    return stof(element);
+}
+
+template <>
+double format(string element) {
+    return stod(element);
+}
+
+template <>
+long double format(string element) {
+    return stold(element);
+}
+
+template <>
+bool format(string element) {
+    return (element != "0");
 }
 
 template <>
@@ -37,7 +58,7 @@ parseString(tuple<Ts...> &tup, stringstream& line) {
     struct args { using arr = vector<Ts...>; };
     string element;
     if (!getline(line, element, ';')) {
-        /* throw error (no enough colums in table)*/
+        //throw out_of_range( "few colums in table" );
     } else {
         auto buf = get<I>(tup);
         get<I>(tup) = format<decltype(buf)>(element);
@@ -88,7 +109,7 @@ public:
         line_iterator& operator++() {
             if (!getline(*file, s)) {
                 file = nullptr;
-                //throw error no enough rows in table
+                //throw out_of_range( "few rows in table" );
             }
             stringstream line(s);
             parseString(output, line);
@@ -120,6 +141,7 @@ public:
 
   line_iterator begin() const { return line_iterator(file); }
   line_iterator end() const { return line_iterator(); }
+    
 
  private:
   std::istream& file;

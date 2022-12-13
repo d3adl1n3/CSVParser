@@ -6,10 +6,27 @@
 #include <tuple>
 #include <vector>
 #include <sstream>
+#include <type_traits>
 
 using namespace std;
 
+template <typename T>
+T format(string element) {
+    return NULL;
+    // throw error -- type unsupported
+}
 
+template <>
+int format(string element) {
+    return stoi(element);
+}
+
+template <>
+string format(string element) {
+    return element;
+}
+
+/* iterate through tuple, set elements from line stream */
 template <size_t I = 0, typename... Ts>
 typename enable_if<I == sizeof...(Ts), void>::type
 parseString(tuple<Ts...> &tup, stringstream& line) { return; }
@@ -17,12 +34,18 @@ parseString(tuple<Ts...> &tup, stringstream& line) { return; }
 template <size_t I = 0, typename... Ts>
 typename enable_if<(I < sizeof...(Ts)), void>::type
 parseString(tuple<Ts...> &tup, stringstream& line) {
+    struct args { using arr = vector<Ts...>; };
     string element;
-    if (!getline(line, element, ';')) {/* throw error*/}
-    get<I>(tup) = element;                                  // add element format
+    if (!getline(line, element, ';')) {
+        /* throw error (no enough colums in table)*/
+    } else {
+        auto buf = get<I>(tup);
+        get<I>(tup) = format<decltype(buf)>(element);
+    }
     parseString<I + 1>(tup, line);
 }
 
+/* tuple output */
 template <typename TupleT, size_t... Is>
 std::ostream& printTupleImp(ostream& os, const TupleT& tp, index_sequence<Is...>) {
     size_t index = 0;
@@ -43,6 +66,7 @@ std::ostream& operator <<(ostream& os, const TupleT& tp) {
     return printTupleImp(os, tp, make_index_sequence<TupSize>{});
 }
 
+/* main parser class */
 template<class... Types>
 class CSVParser {
 public:
@@ -64,21 +88,10 @@ public:
         line_iterator& operator++() {
             if (!getline(*file, s)) {
                 file = nullptr;
-                //throw error
+                //throw error no enough rows in table
             }
             stringstream line(s);
             parseString(output, line);
-            /*
-            string element;
-            int k = 0;
-            while (getline(line, element, ';')) {
-                if (k == 0) {
-                    get<0>(output) = stoi(element);
-                } else if (k == 1) {
-                    get<1>(output) = element;
-                }
-                k++;
-            }*/
             return *this;
         }
 
@@ -115,8 +128,8 @@ public:
 
 int main(int argc, const char * argv[]) {
     std::ifstream file("/Users/iliakateshov/Desktop/test_csv/test_csv/test_table.csv");
-    CSVParser<string, string> parser(file);
-    for (tuple<string, string> rs : parser) {
+    CSVParser<int, string> parser(file);
+    for (tuple<int, string> rs : parser) {
         cout << rs << endl;
     }
     return 0;

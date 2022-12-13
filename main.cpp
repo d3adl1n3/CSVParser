@@ -55,7 +55,6 @@ parseString(tuple<Ts...> &tup, stringstream& line) { return; }
 template <size_t I = 0, typename... Ts>
 typename enable_if<(I < sizeof...(Ts)), void>::type
 parseString(tuple<Ts...> &tup, stringstream& line) {
-    struct args { using arr = vector<Ts...>; };
     string element;
     if (!getline(line, element, ';')) {
         //throw out_of_range( "few colums in table" );
@@ -111,6 +110,10 @@ public:
                 file = nullptr;
                 //throw out_of_range( "few rows in table" );
             }
+            
+            if (!s.empty())
+                s.erase(s.length()-1);
+        
             stringstream line(s);
             parseString(output, line);
             return *this;
@@ -149,10 +152,23 @@ public:
 
 
 int main(int argc, const char * argv[]) {
-    std::ifstream file("/Users/iliakateshov/Desktop/test_csv/test_csv/test_table.csv");
+    cout << "---- First test file <int, string> ----" << endl;
+    ifstream file("/Users/iliakateshov/Desktop/test_csv/test_csv/test_table1.csv");
     CSVParser<int, string> parser(file);
     for (tuple<int, string> rs : parser) {
         cout << rs << endl;
     }
+    cout << endl;
+    file.close();
+    
+    cout << "---- Second test file <int, float, bool> ----" << endl;
+    ifstream file2("/Users/iliakateshov/Desktop/test_csv/test_csv/test_table2.csv");
+    CSVParser<int, float, bool> parser2(file2);
+    for (tuple<int, float, bool> rs : parser2) {
+        cout << rs << endl;
+    }
+    cout << endl;
+    file2.close();
+    
     return 0;
 }

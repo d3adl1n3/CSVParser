@@ -9,18 +9,34 @@
 
 using namespace std;
 
-template<typename typeA, typename typeB>
-ostream &operator<<(ostream &os, tuple<typeA, typeB> const& t) {
-    return os << "(" << get<0>(t) << ", " << get<1>(t) << ")" << endl;
+template <typename TupleT, size_t... Is>
+std::ostream& printTupleImp(ostream& os, const TupleT& tp, index_sequence<Is...>) {
+    size_t index = 0;
+    auto printElem = [&index, &os](const auto& x) {
+        if (index++ > 0)
+            os << ", ";
+        os << x;
+    };
+
+    os << "(";
+    (printElem(get<Is>(tp)), ...);
+    os << ")";
+    return os;
 }
 
-// class... Types
-template<typename typeA, typename typeB>
+template <typename TupleT, size_t TupSize = tuple_size<TupleT>::value>
+std::ostream& operator <<(ostream& os, const TupleT& tp) {
+    return printTupleImp(os, tp, make_index_sequence<TupSize>{});
+}
+
+template<class... Types>
 class CSVParser {
 public:
+    struct args { using arr = vector<Types...>; };
+    
     struct line_iterator {
         using iterator_category = input_iterator_tag;
-        using value_type = tuple<typeA, typeB>;
+        using value_type = tuple<Types...>;
         using difference_type = ptrdiff_t;
         using reference = const value_type&;
         using pointer = const value_type*;
@@ -43,7 +59,7 @@ public:
                 if (k == 0) {
                     get<0>(output) = stoi(element);
                 } else if (k == 1) {
-                    get<1>(output) = (typeB) element;
+                    get<1>(output) = element;
                 }
                 k++;
             }
@@ -68,7 +84,7 @@ public:
         istream* file;
         string s;
         vector<string> arr;
-        tuple<typeA, typeB> output;
+        tuple<Types...> output;
     };
     
   CSVParser(std::istream& input_file): file(input_file) {}

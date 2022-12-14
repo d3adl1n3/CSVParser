@@ -68,24 +68,11 @@ parseString(tuple<Ts...> &tup, stringstream& line) {
 }
 
 /* tuple output */
-template <typename TupleT, size_t... Is>
-std::ostream& printTupleImp(ostream& os, const TupleT& tp, index_sequence<Is...>) {
-    size_t index = 0;
-    auto printElem = [&index, &os](const auto& x) {
-        if (index++ > 0)
-            os << ", ";
-        os << x;
-    };
-
-    os << "(";
-    (printElem(get<Is>(tp)), ...);
-    os << ")";
-    return os;
-}
-
-template <typename TupleT, size_t TupSize = tuple_size<TupleT>::value>
-std::ostream& operator <<(ostream& os, const TupleT& tp) {
-    return printTupleImp(os, tp, make_index_sequence<TupSize>{});
+template<typename... Args>
+ostream& operator<<(ostream& os, tuple<Args...> const& t) {
+  bool first = true;
+  apply([&](auto&&... args){ ((os << (first ? "" : ", ") << args, first = false), ...); }, t);
+  return os;
 }
 
 /* main parser class */

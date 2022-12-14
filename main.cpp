@@ -13,13 +13,19 @@ using namespace std;
 /*data formatting*/
 template <typename T>
 T format(string element) {
-    //throw invalid_argument( "type unsupported" );
+    throw invalid_argument("type unsupported");
     return NULL;
 }
 
 template <>
 int format(string element) {
-    return stoi(element);
+    try {
+        return stoi(element);
+    }
+    catch (...) {
+        throw invalid_argument("type unsupported");
+        return 0;
+    }
 }
 
 template <>
@@ -56,11 +62,12 @@ template <size_t I = 0, typename... Ts>
 typename enable_if<(I < sizeof...(Ts)), void>::type
 parseString(tuple<Ts...> &tup, stringstream& line) {
     string element;
-    if (!getline(line, element, ';')) {
-        //throw out_of_range( "few colums in table" );
-    } else {
+    if (getline(line, element, ';')) {
         auto buf = get<I>(tup);
-        get<I>(tup) = format<decltype(buf)>(element);
+        try { get<I>(tup) = format<decltype(buf)>(element); }
+        catch (const std::invalid_argument& e) {
+            throw string("An exception occurred bad type in line: " + to_string(I+1));
+        }
     }
     parseString<I + 1>(tup, line);
 }
@@ -108,14 +115,17 @@ public:
         line_iterator& operator++() {
             if (!getline(*file, s)) {
                 file = nullptr;
-                //throw out_of_range( "few rows in table" );
             }
+            line_num += 1;
             
             if (!s.empty())
                 s.erase(s.length()-1);
         
             stringstream line(s);
-            parseString(output, line);
+            try { parseString(output, line); }
+            catch (const string& e) {
+                cout << e << " row: " << line_num << endl;
+            }
             return *this;
         }
 
@@ -138,6 +148,7 @@ public:
         string s;
         vector<string> arr;
         tuple<Types...> output;
+        int line_num = 0;
     };
     
   CSVParser(istream& input_file): file(input_file) {}
@@ -154,8 +165,8 @@ public:
 int main(int argc, const char * argv[]) {
     cout << "---- First test file <int, string> ----" << endl;
     ifstream file("/Users/iliakateshov/Desktop/test_csv/test_csv/test_table1.csv");
-    CSVParser<int, string> parser(file);
-    for (tuple<int, string> rs : parser) {
+    CSVParser<int, int> parser(file);
+    for (tuple<int, int> rs : parser) {
         cout << rs << endl;
     }
     cout << endl;

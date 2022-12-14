@@ -10,40 +10,22 @@ using namespace std;
 
 /*data formatting*/
 template <typename T>
-T format(string element) {
-    throw invalid_argument("type unsupported");
-    return NULL;
-}
+T format(string element) { return NULL; }
 
 template <>
-int format(string element) {
-    try { return stoi(element); }
-    catch (...) { throw invalid_argument("type unsupported"); return 0; }
-}
+int format(string element) { return stoi(element); }
 
 template <>
-float format(string element) {
-    try { return stof(element); }
-    catch (...) { throw invalid_argument("type unsupported"); return 0;}
-}
+float format(string element) { return stof(element); }
 
 template <>
-double format(string element) {
-    try { return stod(element); }
-    catch (...) { throw invalid_argument("type unsupported"); return 0;}
-}
+double format(string element) { return stod(element); }
 
 template <>
-long double format(string element) {
-    try { return stold(element); }
-    catch (...) { throw invalid_argument("type unsupported"); return 0;}
-}
+long double format(string element) { return stold(element); }
 
 template <>
-bool format(string element) {
-    try { return (element != "0"); }
-    catch (...) { throw invalid_argument("type unsupported"); return 0;}
-}
+bool format(string element) { return (element != "0"); }
 
 template <>
 string format(string element) { return element; }
@@ -61,6 +43,7 @@ parseString(tuple<Ts...> &tup, stringstream& line) {
         auto buf = get<I>(tup);
         try { get<I>(tup) = format<decltype(buf)>(element); }
         catch (const std::invalid_argument& e) {
+            get<I>(tup) = NULL;
             throw string("An exception occurred bad type in line: " + to_string(I+1));
         }
     }
@@ -104,7 +87,6 @@ public:
         }
 
         line_iterator operator++(int) { auto copy(*this); ++*this; return copy; }
-
         friend bool operator==(const line_iterator& x, const line_iterator& y) { return x.file == y.file; }
         friend bool operator!=(const line_iterator& x, const line_iterator& y) { return !(x == y); }
         
@@ -128,8 +110,8 @@ public:
 int main(int argc, const char * argv[]) {
     cout << "---- First test file <int, string> ----" << endl;
     ifstream file("/Users/iliakateshov/Desktop/test_csv/test_csv/test_table1.csv");
-    CSVParser<int, string> parser(file);
-    for (tuple<int, string> rs : parser) {
+    CSVParser<int, int> parser(file);
+    for (tuple<int, int> rs : parser) {
         cout << rs << endl;
     }
     cout << endl;

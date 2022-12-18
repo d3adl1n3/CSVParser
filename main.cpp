@@ -1,15 +1,12 @@
 #include <iostream>
 #include <string>
-#include <istream>
 #include <fstream>
 #include <tuple>
-#include <vector>
 #include <sstream>
 
 using namespace std;
 
-/*data formatting*/
-template <typename T>
+template <typename T>                           // data formatting
 T format(string element) { return NULL; }
 
 template <>
@@ -22,43 +19,23 @@ template <>
 double format(string element) { return stod(element); }
 
 template <>
-long double format(string element) { return stold(element); }
-
-template <>
 bool format(string element) { return (element != "0"); }
 
 template <>
 string format(string element) { return element; }
 
-/* iterate through tuple, set elements from line stream */
-template <size_t I = 0, typename... Ts>
-typename enable_if<I == sizeof...(Ts), void>::type
-parseString(tuple<Ts...> &tup, stringstream& line) { return; }
-
-template <size_t I = 0, typename... Ts>
-typename enable_if<(I < sizeof...(Ts)), void>::type
-parseString(tuple<Ts...> &tup, stringstream& line) {
-    string element;
-    if (getline(line, element, ';')) {
-        auto buf = get<I>(tup);
-        try { get<I>(tup) = format<decltype(buf)>(element); }
-        catch (const std::invalid_argument& e) {
-            get<I>(tup) = NULL;
-            throw string("An exception occurred bad type in line: " + to_string(I+1));
-        }
-    }
-    parseString<I + 1>(tup, line);
+template <typename TupleT, typename Fn>             // iterate through tuple
+void for_each(TupleT&& tp, Fn&& fn) {
+    apply([&fn]<typename ...T>(T&& ...args) {(fn(forward<T>(args)), ...);}, forward<TupleT>(tp)); // Explicit template parameter list for lambdas is a C++20 extension
 }
 
-/* tuple output */
-template<typename... Args>
+template<typename... Args>                          // tuple output
 ostream& operator<<(ostream& os, tuple<Args...> const& t) {
   bool first = true;
   apply([&](auto&&... args){ ((os << (first ? "" : ", ") << args, first = false), ...); }, t);
   return os;
 }
 
-/* main parser class */
 template<class... Types>
 class CSVParser {
 public:
@@ -80,9 +57,15 @@ public:
             if (!s.empty()) {s.erase(s.length()-1);}
             line_num++;
         
-            stringstream line(s);
-            try { parseString(output, line); }
-            catch (const string& e) { cout << e << " row: " << line_num << endl; }
+            stringstream line(s); string element; int row;
+            for_each(output, [&](auto&& x){
+                if (getline(line, element, ';')) {
+                    row++;
+                    auto buf = x;
+                    try { x = format<decltype(buf)>(element); }
+                    catch (const std::invalid_argument& e) { cout << "Exc bad type in row: " << row << " line:" << line_num << endl; }
+                }
+            });
             return *this;
         }
 
@@ -106,25 +89,13 @@ public:
   std::istream& file;
 };
 
-
 int main(int argc, const char * argv[]) {
-    cout << "---- First test file <int, string> ----" << endl;
     ifstream file("/Users/iliakateshov/Desktop/test_csv/test_csv/test_table1.csv");
-    CSVParser<int, int> parser(file);
-    for (tuple<int, int> rs : parser) {
+    CSVParser<int, string> parser(file);
+    for (tuple<int, string> rs : parser) {
         cout << rs << endl;
     }
     cout << endl;
     file.close();
-    
-    cout << "---- Second test file <int, float, bool> ----" << endl;
-    ifstream file2("/Users/iliakateshov/Desktop/test_csv/test_csv/test_table2.csv");
-    CSVParser<int, float, bool> parser2(file2);
-    for (tuple<int, float, bool> rs : parser2) {
-        cout << rs << endl;
-    }
-    cout << endl;
-    file2.close();
-    
     return 0;
 }
